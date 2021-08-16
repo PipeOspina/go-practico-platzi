@@ -91,4 +91,10 @@ func main() {
 		}
 		fmt.Println(i)
 	}
+
+	mapaTareas := make(map[string]*taskList)
+
+	mapaTareas["Pipe"] = &lista
+	mapaTareas["Pipe"].imprimirLista()
+	fmt.Println(mapaTareas)
 }
