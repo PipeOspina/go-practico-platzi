@@ -7,17 +7,20 @@ import (
 type Server struct {
     port string
     router *Router
+    middlewares []Middleware
 }
 
-func NewServer(port string) *Server {
+func NewServer(port string, middlewares ...Middleware) *Server {
     return &Server{
         port: port,
         router: NewRouter(),
+        middlewares: middlewares,
     }
 }
 
-func (s *Server) Handle(path string, handler http.HandlerFunc) {
-    s.router.rules[path] = handler
+func (s *Server) Handle(path string, handler http.HandlerFunc, middlewares ...Middleware) {
+    allMiddlewares := append(s.middlewares, middlewares...)
+    s.router.rules[path] = s.AddMiddleware(handler, allMiddlewares...)
 }
 
 func (s *Server) AddMiddleware(f http.HandlerFunc, middlewares ...Middleware) http.HandlerFunc {
