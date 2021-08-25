@@ -1,33 +1,42 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 )
 
 type Router struct {
-    rules map[string]http.HandlerFunc
+    rules map[EndpointPath]map[HTTPMethod]http.HandlerFunc
 }
 
 func NewRouter() *Router {
     return &Router{
-        rules: make(map[string]http.HandlerFunc),
+        rules: make(map[EndpointPath]map[HTTPMethod]http.HandlerFunc),
     }
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-    handler, exists := r.FindHandler(req.URL.Path)
+    handler, pathExists, methodExists := r.FindHandler(EndpointPath(req.URL.Path), HTTPMethod(req.Method))
 
-    if !exists {
-        w.WriteHeader(http.StatusNotFound)
-        fmt.Fprint(w, "Not found!")
+    if !pathExists {
+        LoggerHandlerError(w, req, http.StatusNotFound, "Not found!")
+        return
+    }
+
+    if !methodExists {
+        LoggerHandlerError(w, req, http.StatusMethodNotAllowed, "Method not allowed!")
         return
     }
 
     handler(w, req)
 }
 
-func (r *Router) FindHandler(path string) (handler http.HandlerFunc, exists bool) {
-    handler, exists = r.rules[path]
+func (r *Router) FindHandler(path EndpointPath, method HTTPMethod) (handler http.HandlerFunc, pathExists bool, methodExists bool) {
+    methodsAllowed, pathExists := r.rules[path]
+
+    if !pathExists {
+        return nil, false, false
+    }
+
+    handler, methodExists = methodsAllowed[method]
     return
 }

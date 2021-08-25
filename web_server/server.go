@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 )
 
@@ -18,9 +19,14 @@ func NewServer(port string, middlewares ...Middleware) *Server {
     }
 }
 
-func (s *Server) Handle(path string, handler http.HandlerFunc, middlewares ...Middleware) {
+func (s *Server) Handle(path EndpointPath, method HTTPMethod, handler http.HandlerFunc, middlewares ...Middleware) {
+    _, exists := s.router.rules[path]
+
+    if !exists {
+        s.router.rules[path] = make(map[HTTPMethod]http.HandlerFunc)
+    }
     allMiddlewares := append(s.middlewares, middlewares...)
-    s.router.rules[path] = s.AddMiddleware(handler, allMiddlewares...)
+    s.router.rules[path][method] = s.AddMiddleware(handler, allMiddlewares...)
 }
 
 func (s *Server) AddMiddleware(f http.HandlerFunc, middlewares ...Middleware) http.HandlerFunc {
@@ -33,8 +39,10 @@ func (s *Server) AddMiddleware(f http.HandlerFunc, middlewares ...Middleware) ht
 func (s *Server) Listen() error {
     http.Handle("/", s.router)
 
+    log.Printf("\033[0;32m%s%s\033[0m", "Server listening on http://localhost", s.port)
     err := http.ListenAndServe(s.port, nil)
     if (err != nil) {
+        log.Fatalf("\033[0;31m%s", err)
         return err
     }
     return nil
