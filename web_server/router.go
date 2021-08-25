@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 )
 
 type Router struct {
@@ -15,15 +16,16 @@ func NewRouter() *Router {
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
 	handler, pathExists, methodExists := r.FindHandler(EndpointPath(req.URL.Path), HTTPMethod(req.Method))
 
 	if !pathExists {
-		LoggerHandlerError(w, req, http.StatusNotFound, "Not found!")
+		LoggerHandlerError(w, req, http.StatusNotFound, "Not found!", start)
 		return
 	}
 
 	if !methodExists {
-		LoggerHandlerError(w, req, http.StatusMethodNotAllowed, "Method not allowed!")
+		LoggerHandlerError(w, req, http.StatusMethodNotAllowed, "Method not allowed!", start)
 		return
 	}
 
